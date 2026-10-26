@@ -57,6 +57,53 @@ describe('ReactDOMFizzServerBrowser', () => {
     }
   }
 
+  it.each([undefined, false, true])(
+    'supports externalRuntime=%s',
+    async externalRuntime => {
+      const stream = await serverAct(() =>
+        ReactDOMFizzServer.renderToReadableStream(<form action={() => {}} />, {
+          externalRuntime,
+        }),
+      );
+      const result = await readResult(stream);
+      expect(result).not.toContain('$RS=');
+      expect(result.includes('addEventListener("submit"')).toBe(
+        externalRuntime !== true,
+      );
+    },
+  );
+
+  it('can explicitly provide the runtime in consecutive native byte streams', async () => {
+    const previousReadableStream = global.ReadableStream;
+    global.ReadableStream = require('stream/web').ReadableStream;
+    try {
+      const first = await serverAct(() =>
+        ReactDOMFizzServer.renderToReadableStream(
+          <>
+            <script>{ReactDOMFizzServer.getFizzRuntimeScriptContent()}</script>
+            <p>Ready</p>
+          </>,
+          {externalRuntime: true},
+        ),
+      );
+      const firstHTML = await readResult(first);
+      expect(firstHTML).toContain('$RS=');
+      expect(firstHTML).toContain('addEventListener("submit"');
+      const second = await serverAct(() =>
+        ReactDOMFizzServer.renderToReadableStream(
+          <>
+            <script>{ReactDOMFizzServer.getFizzRuntimeScriptContent()}</script>
+            <p>Ready</p>
+          </>,
+          {externalRuntime: true},
+        ),
+      );
+      expect(await readResult(second)).toBe(firstHTML);
+    } finally {
+      global.ReadableStream = previousReadableStream;
+    }
+  });
+
   it('should call renderToReadableStream', async () => {
     const stream = await serverAct(() =>
       ReactDOMFizzServer.renderToReadableStream(<div>hello world</div>),

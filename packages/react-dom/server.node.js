@@ -51,3 +51,7 @@ export function resume() {
     arguments,
   );
 }
+
+export function getFizzRuntimeScriptContent() {
+  return require('./src/server/react-dom-server.node').getFizzRuntimeScriptContent();
+}

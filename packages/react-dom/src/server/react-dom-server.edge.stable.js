@@ -8,6 +8,7 @@
  */
 
 export {
+  getFizzRuntimeScriptContent,
   renderToReadableStream,
   resume,
   version,

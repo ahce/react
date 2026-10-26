@@ -93,6 +93,20 @@ describe('ReactDOMFizzStaticNode', () => {
     expect(prelude).toMatchInlineSnapshot(`"<div>hello world</div>"`);
   });
 
+  it.each([false, true])(
+    'supports externalRuntime=%s when prerendering with web streams',
+    async externalRuntime => {
+      const result = await ReactDOMFizzStatic.prerender(
+        <form action={() => {}} />,
+        {externalRuntime},
+      );
+      const prelude = await readContentWeb(result.prelude);
+      expect(prelude.includes('addEventListener("submit"')).toBe(
+        !externalRuntime,
+      );
+    },
+  );
+
   it('should suppport web streams', async () => {
     const result = await ReactDOMFizzStatic.prerender(<div>hello world</div>);
     const prelude = await readContentWeb(result.prelude);

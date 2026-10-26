@@ -17,3 +17,4 @@ exports.resumeToPipeableStream = b.resumeToPipeableStream;
 exports.resume = b.resume;
 exports.renderToString = l.renderToString;
 exports.renderToStaticMarkup = l.renderToStaticMarkup;
+exports.getFizzRuntimeScriptContent = b.getFizzRuntimeScriptContent;

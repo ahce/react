@@ -139,6 +139,21 @@ describe('ReactDOMFizzStaticBrowser', () => {
     jest.runAllTimers();
   }
 
+  it.each([false, true])(
+    'supports externalRuntime=%s when prerendering',
+    async externalRuntime => {
+      const result = await serverAct(() =>
+        ReactDOMFizzStatic.prerender(<form action={() => {}} />, {
+          externalRuntime,
+        }),
+      );
+      const prelude = await readContent(result.prelude);
+      expect(prelude.includes('addEventListener("submit"')).toBe(
+        !externalRuntime,
+      );
+    },
+  );
+
   it('should call prerender', async () => {
     const result = await serverAct(() =>
       ReactDOMFizzStatic.prerender(<div>hello world</div>),

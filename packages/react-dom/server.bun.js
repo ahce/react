@@ -52,3 +52,7 @@ export function resumeToPipeableStream() {
     arguments,
   );
 }
+
+export function getFizzRuntimeScriptContent() {
+  return require('./src/server/react-dom-server.bun').getFizzRuntimeScriptContent();
+}

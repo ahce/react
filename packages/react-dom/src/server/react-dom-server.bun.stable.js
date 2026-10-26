@@ -7,7 +7,11 @@
  * @flow
  */
 
-export {renderToReadableStream, version} from './ReactDOMFizzServerBun.js';
+export {
+  getFizzRuntimeScriptContent,
+  renderToReadableStream,
+  version,
+} from './ReactDOMFizzServerBun.js';
 export {
   renderToPipeableStream,
   resume,

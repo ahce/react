@@ -56,6 +56,7 @@ type Options = {
   onError?: (error: mixed, errorInfo: ErrorInfo) => ?string,
   onBrowserBailout?: (error: mixed, errorInfo: ErrorInfo) => void,
   unstable_externalRuntimeSrc?: string | BootstrapScriptDescriptor,
+  externalRuntime?: boolean,
   importMap?: ImportMap,
   onHeaders?: (headers: Headers) => void,
   maxHeadersLength?: number,
@@ -111,6 +112,7 @@ function prerender(
       options ? options.bootstrapScriptContent : undefined,
       options ? options.bootstrapScripts : undefined,
       options ? options.bootstrapModules : undefined,
+      options ? options.externalRuntime : undefined,
     );
     const request = createPrerenderRequest(
       children,

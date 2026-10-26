@@ -136,6 +136,14 @@ const SentMarkShellTime /*                */ = 0b001000000;
 const NeedUpgradeToViewTransitions /*     */ = 0b010000000;
 const SentUpgradeToViewTransitions /*     */ = 0b100000000;
 
+const SentRuntimeDefinitions =
+  SentCompleteSegmentFunction |
+  SentCompleteBoundaryFunction |
+  SentClientRenderFunction |
+  SentStyleInsertionFunction |
+  SentFormReplayingRuntime |
+  (enableViewTransition ? SentUpgradeToViewTransitions : NothingSent);
+
 type NonceOption =
   | string
   | {
@@ -264,6 +272,7 @@ export type ResumableState = {
   idPrefix: string,
   nextFormID: number,
   streamingFormat: StreamingFormat,
+  externalRuntime: boolean,
 
   // We carry the bootstrap intializers in resumable state in case we postpone in the shell
   // of a prerender. On resume we will reinitialize the bootstrap scripts if necessary.
@@ -364,6 +373,18 @@ const importMapScriptStart = stringToPrecomputedChunk(
   '<script type="importmap">',
 );
 const importMapScriptEnd = stringToPrecomputedChunk('</script>');
+
+const fizzRuntimeScriptContent =
+  clientRenderFunction +
+  completeBoundaryFunction +
+  (enableViewTransition ? upgradeToViewTransitionsInstruction : '') +
+  styleInsertionFunction +
+  completeSegmentFunction +
+  formReplayingRuntime;
+
+export function getFizzRuntimeScriptContent(): string {
+  return fizzRuntimeScriptContent;
+}
 
 // Since we store headers as strings we deal with their length in utf16 code units
 // rather than visual characters or the utf8 encoding that is used for most binary
@@ -691,6 +712,7 @@ export function createResumableState(
   bootstrapScriptContent: string | void,
   bootstrapScripts: $ReadOnlyArray<string | BootstrapScriptDescriptor> | void,
   bootstrapModules: $ReadOnlyArray<string | BootstrapScriptDescriptor> | void,
+  externalRuntime?: boolean,
 ): ResumableState {
   const idPrefix = identifierPrefix === undefined ? '' : identifierPrefix;
 
@@ -704,10 +726,13 @@ export function createResumableState(
     idPrefix: idPrefix,
     nextFormID: 0,
     streamingFormat,
+    externalRuntime: externalRuntime === true,
     bootstrapScriptContent,
     bootstrapScripts,
     bootstrapModules,
-    instructions: NothingSent,
+    // An externally provided inline runtime already includes every definition.
+    instructions:
+      externalRuntime === true ? SentRuntimeDefinitions : NothingSent,
     hasBody: false,
     hasHtml: false,
 
@@ -748,7 +773,10 @@ export function resetResumableState(
   resumableState.scriptResources = {};
   resumableState.moduleUnknownResources = {};
   resumableState.moduleScriptResources = {};
-  resumableState.instructions = NothingSent; // Nothing was flushed so no instructions could've flushed.
+  // Nothing was flushed, but an externally provided runtime is still available.
+  resumableState.instructions = resumableState.externalRuntime
+    ? SentRuntimeDefinitions
+    : NothingSent;
 }
 
 export function completeResumableState(resumableState: ResumableState): void {

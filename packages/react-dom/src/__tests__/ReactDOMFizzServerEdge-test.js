@@ -42,6 +42,65 @@ describe('ReactDOMFizzServerEdge', () => {
     }
   }
 
+  it.each([undefined, false, true])(
+    'supports externalRuntime=%s',
+    async externalRuntime => {
+      const stream = await ReactDOMFizzServer.renderToReadableStream(
+        <form action={() => {}} />,
+        {
+          externalRuntime,
+        },
+      );
+      const result = await readResult(stream);
+      expect(result).not.toContain('$RS=');
+      expect(result.includes('addEventListener("submit"')).toBe(
+        externalRuntime !== true,
+      );
+    },
+  );
+
+  it.each([false, true])(
+    'supports externalRuntime=%s when prerendering',
+    async externalRuntime => {
+      const ReactDOMFizzStatic = require('react-dom/static.edge');
+      const result = await ReactDOMFizzStatic.prerender(
+        <form action={() => {}} />,
+        {externalRuntime},
+      );
+      const prelude = await readResult(result.prelude);
+      expect(prelude.includes('addEventListener("submit"')).toBe(
+        !externalRuntime,
+      );
+    },
+  );
+
+  it('can explicitly provide the runtime in consecutive native byte streams', async () => {
+    const previousReadableStream = global.ReadableStream;
+    global.ReadableStream = require('stream/web').ReadableStream;
+    try {
+      const first = await ReactDOMFizzServer.renderToReadableStream(
+        <>
+          <script>{ReactDOMFizzServer.getFizzRuntimeScriptContent()}</script>
+          <p>Ready</p>
+        </>,
+        {externalRuntime: true},
+      );
+      const firstHTML = await readResult(first);
+      expect(firstHTML).toContain('$RS=');
+      expect(firstHTML).toContain('addEventListener("submit"');
+      const second = await ReactDOMFizzServer.renderToReadableStream(
+        <>
+          <script>{ReactDOMFizzServer.getFizzRuntimeScriptContent()}</script>
+          <p>Ready</p>
+        </>,
+        {externalRuntime: true},
+      );
+      expect(await readResult(second)).toBe(firstHTML);
+    } finally {
+      global.ReadableStream = previousReadableStream;
+    }
+  });
+
   // https://github.com/react/react/issues/27540
   it('does not try to write to the stream after it has been closed', async () => {
     async function preloadLate() {

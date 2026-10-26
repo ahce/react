@@ -87,6 +87,22 @@ describe('ReactDOMFizzServerNode', () => {
     expect(result).toMatchInlineSnapshot(`"<div>hello world</div>"`);
   });
 
+  it.each([undefined, false, true])(
+    'supports externalRuntime=%s with web streams',
+    async externalRuntime => {
+      const stream = await act(() =>
+        ReactDOMFizzServer.renderToReadableStream(<form action={() => {}} />, {
+          externalRuntime,
+        }),
+      );
+      const result = await readContentWeb(stream);
+      expect(result).not.toContain('$RS=');
+      expect(result.includes('addEventListener("submit"')).toBe(
+        externalRuntime !== true,
+      );
+    },
+  );
+
   it('flush fully if piping in on onShellReady', async () => {
     const {writable, output} = getTestWritable();
     await act(() => {
